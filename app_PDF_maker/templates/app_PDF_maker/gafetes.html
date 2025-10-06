@@ -1,0 +1,99 @@
+{% extends 'app_PDF_maker/base.html' %}
+
+{% block title %}Gafete - Dreacht Hub{% endblock %}
+
+{% block extra_head %}
+<style>
+    .container {
+        position: relative;
+    }
+    .form-container {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 100%;
+    }
+    .form-wrapper {
+        width: 100%;
+        max-width: 600px;
+        text-align: center;
+    }
+    .form-wrapper .mb-3 {
+        margin-bottom: 15px;
+    }
+    .form-wrapper .mb-3 label {
+        display: block;
+        margin-bottom: 5px;
+    }
+    .form-wrapper .mb-3 input, .form-wrapper .mb-3 textarea, .form-wrapper .mb-3 select {
+        display: block;
+        margin: 0 auto;
+        width: 300px;
+        max-width: 300px;
+    }
+    .form-wrapper label {
+        color: white;
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <div class="form-wrapper bg-dark text-white p-4 rounded shadow">
+<h1 class="mt-4 text-white">Gafetes</h1>
+<form method="post" novalidate>
+    {% csrf_token %}
+    <div class="mb-3">
+        {{ form.nombre.label_tag }}
+        {{ form.nombre }}
+        {% if form.nombre.errors %}
+            <div class="text-danger">{{ form.nombre.errors }}</div>
+        {% endif %}
+    </div>
+    <div class="mb-3">
+        {{ form.foto.label_tag }}
+        {{ form.foto }}
+        {% if form.foto.errors %}
+            <div class="text-danger">{{ form.foto.errors }}</div>
+        {% endif %}
+    </div>
+    <div class="mb-3">
+        {{ form.puesto.label_tag }}
+        {{ form.puesto }}
+        {% if form.puesto.errors %}
+            <div class="text-danger">{{ form.puesto.errors }}</div>
+        {% endif %}
+    </div>
+    <div class="mb-3">
+        {{ form.direccion.label_tag }}
+        {{ form.direccion }}
+        {% if form.direccion.errors %}
+            <div class="text-danger">{{ form.direccion.errors }}</div>
+        {% endif %}
+    </div>
+    <div class="mb-3">
+        {{ form.nss.label_tag }}
+        {{ form.nss }}
+        {% if form.nss.errors %}
+            <div class="text-danger">{{ form.nss.errors }}</div>
+        {% endif %}
+    </div>
+    <div class="mb-3">
+        {{ form.tel.label_tag }}
+        {{ form.tel }}
+        {% if form.tel.errors %}
+            <div class="text-danger">{{ form.tel.errors }}</div>
+        {% endif %}
+    </div>
+    <div class="mb-3">
+        {{ form.tel_emg.label_tag }}
+        {{ form.tel_emg }}
+        {% if form.tel_emg.errors %}
+            <div class="text-danger">{{ form.tel_emg.errors }}</div>
+        {% endif %}
+    </div>
+    <button type="submit" class="btn btn-danger">terminado</button>
+</form>
+    </div>
+</div>
+{% endblock %}
