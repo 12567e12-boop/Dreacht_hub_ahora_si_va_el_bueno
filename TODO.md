@@ -93,3 +93,6 @@ For Requisitions View:
 
 ## Gafetes Container Color Task
 - [x] Change the form-container in gafetes.html to bg-dark text-white to match the navbar color.
+
+## Center Form in Card Container Task
+- [ ] Center the form vertically and horizontally in the card container in gafetes.html using flexbox.
