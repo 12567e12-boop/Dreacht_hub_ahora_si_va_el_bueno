@@ -2,6 +2,17 @@ from django import forms
 from empleados.models import Empleado
 
 class EmpleadoForm(forms.ModelForm):
+    GAFETE_CHOICES = [
+        ('cyber_robotics', 'Cyber robotics'),
+        ('dreacht_strukchur', 'Dreacht & Strukchur'),
+    ]
+
+    area = forms.ChoiceField(
+        choices=GAFETE_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label="Área"
+    )
+
     class Meta:
         model = Empleado
         exclude = ['gafete_pdf', 'fecha_alta', 'fecha_baja', 'nomina']
@@ -16,18 +27,18 @@ class EmpleadoForm(forms.ModelForm):
             }),
             'direccion': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': '(Opcional) Dirección'
+                'placeholder': '(Opcional)'
             }),
             'nss': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': '(Opcional) Número de Seguro Social'
+                'placeholder': '(Opcional)'
             }),
             'tel': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': '(Opcional) Teléfono'
+                'placeholder': '(Opcional)'
             }),
             'tel_emg': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': '(Opcional) Teléfono de emergencia'
+                'placeholder': '(Opcional)'
             }),
         }

@@ -47,7 +47,7 @@
 <div class="form-container">
     <div class="form-wrapper">
         <h1 class="text-center mb-4">Gafetes</h1>
-        <form method="post" novalidate>
+        <form method="post" enctype="multipart/form-data" novalidate>
             {% csrf_token %}
             <div class="mb-3">
                 {{ form.nombre.label_tag }}
@@ -72,6 +72,15 @@
                     <div class="text-danger">{{ form.puesto.errors }}</div>
                 {% endif %}
             </div>
+
+            <div class="mb-3">
+                  {{ form.area.label_tag }}
+                   {{ form.area }}
+                   {% if form.area.errors %}
+                      <div class="text-danger">{{ form.area.errors }}</div>
+                    {% endif %}
+</div>
+
 
             <div class="mb-3">
                 {{ form.direccion.label_tag }}

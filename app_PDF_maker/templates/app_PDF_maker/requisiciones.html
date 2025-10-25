@@ -5,25 +5,52 @@
 {% block extra_head %}
 <style>
     body, html {
-        margin: 0; padding: 0; height: 100%;;
+        margin: 0;
+        padding: 0;
+        height: 100%;
     }
+
     #pdf-container {
         position: relative;
         width: 100%;
         height: 100vh;
         overflow: hidden;
+        background: #f0f0f0;
     }
+
     #pdf-canvas {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
+        display: block;
+        margin: 0 auto;
+        max-width: 100%;
+        height: auto;
     }
+
     #form-overlay {
         position: absolute;
         top: 0; left: 0;
         width: 100%;
         height: 100%;
-        pointer-events: none; /* disable interaction for now */
+        pointer-events: none; /* inputs los reactivamos con JS */
+    }
+
+    .campo {
+        position: absolute;
+        font-size: 14px;
+        border: 1px solid #777;
+        border-radius: 4px;
+        padding: 3px 6px;
+        background-color: rgba(255, 255, 255, 0.8);
+        pointer-events: auto; /* habilita interacción */
+        box-sizing: border-box;
+    }
+
+    #submit-btn {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 8px 18px;
+        font-weight: bold;
     }
 </style>
 {% endblock %}
@@ -31,39 +58,157 @@
 {% block content %}
 <div id="pdf-container">
     <canvas id="pdf-canvas"></canvas>
-    <div id="form-overlay">
-        <!-- Form fields will be positioned here absolutely -->
-    </div>
+
+    <form id="form-overlay" method="POST" action="{% url 'requisiciones' %}">
+        {% csrf_token %}
+
+        <!-- Campos (coordenadas relativas %) -->
+        <input type="text" name="obra" placeholder="obra" class="campo" id="campo-obra">
+        <input type="text" name="puesto" placeholder="Puesto" class="campo" id="campo-puesto">
+        <input type="text" name="fecha" placeholder="Fecha" class="campo" id="campo-fecha">
+
+        <button id="submit-btn" type="submit">Generar PDF</button>
+    </form>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.9.179/pdf.min.js"></script>
 <script>
-    const url = '/static/media/requiscion_template.pdf'; 
+const url = '/static/media/requiscion_template.pdf';
+const pdfjsLib = window['pdfjs-dist/build/pdf'];
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.9.179/pdf.worker.min.js';
 
-    const pdfjsLib = window['pdfjs-dist/build/pdf'];
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.9.179/pdf.worker.min.js';
+const canvas = document.getElementById('pdf-canvas');
+const ctx = canvas.getContext('2d');
+const overlayForm = document.getElementById('form-overlay');
+const container = document.getElementById('pdf-container');
 
-    const canvas = document.getElementById('pdf-canvas');
-    const ctx = canvas.getContext('2d');
+// Tamaño original del PDF en puntos (letter)
+const pdfOriginal = { width: 612, height: 792 };
 
-    function renderPDF(url) {
-        pdfjsLib.getDocument(url).promise.then(pdf => {
-            pdf.getPage(1).then(page => {
-                const viewport = page.getViewport({ scale: 1 });
-                canvas.height = viewport.height;
-                canvas.width = viewport.width;
+// Coordenadas en puntos PDF: AJUSTA ESTOS VALORES a tu plantilla
+const campos = {
+    obra: { x: 175, y: 645 }, 
+    puesto: { x: 150, y: 10 },
+    fecha:  { x: 470, y: 660 },
 
-                const renderContext = {
-                    canvasContext: ctx,
-                    viewport: viewport
-                };
-                page.render(renderContext);
+};
+
+// Flag de debug: dibuja cajas rojas donde se posicionan los campos
+const DEBUG_DRAW_BOXES = false;
+
+function renderPDF(url) {
+    pdfjsLib.getDocument(url).promise.then(pdf => {
+        pdf.getPage(1).then(page => {
+            // Ajusta scale según quieras (puedes calcular scale para ajustar ancho al contenedor)
+            const desiredWidth = Math.min(container.clientWidth, window.innerWidth);
+            const viewportUnscaled = page.getViewport({ scale: 1 });
+            const scale = desiredWidth / viewportUnscaled.width;
+            const viewport = page.getViewport({ scale });
+
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            canvas.style.width = `${viewport.width}px`;
+            canvas.style.height = `${viewport.height}px`;
+
+            const renderContext = { canvasContext: ctx, viewport };
+            page.render(renderContext).promise.then(() => {
+                syncOverlayToCanvas();
+                positionFields();
+                // Reposicionar en resize (con debounce)
+                let resizeTimer;
+                window.addEventListener('orientationchange', () => {
+                    clearTimeout(resizeTimer);
+                    resizeTimer = setTimeout(() => {
+                        // re-render with new scale to fit container width
+                        renderPDF(url);
+                    }, 120);
+                });
+                
             });
         });
+    }).catch(err => {
+        console.error("Error cargando PDF:", err);
+    });
+}
+
+function syncOverlayToCanvas() {
+    // Obtener rect del canvas relativo al contenedor
+    const canvasRect = canvas.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+
+    // Posicionar overlay exactamente encima del canvas (en coordenadas del contenedor)
+    const left = canvasRect.left - containerRect.left;
+    const top  = canvasRect.top  - containerRect.top;
+
+    overlayForm.style.position = 'absolute';
+    overlayForm.style.left = `${left}px`;
+    overlayForm.style.top  = `${top}px`;
+    overlayForm.style.width = `${canvasRect.width}px`;
+    overlayForm.style.height = `${canvasRect.height}px`;
+    overlayForm.style.pointerEvents = 'auto'; // permitir interacción
+    overlayForm.style.overflow = 'visible';
+}
+
+function positionFields() {
+    // Obtener tamaño actual del canvas dentro del overlay
+    const overlayRect = overlayForm.getBoundingClientRect();
+    const canvasRect = canvas.getBoundingClientRect();
+    const w = canvasRect.width;
+    const h = canvasRect.height;
+
+    // Para cada campo, calcular su posición en pixeles relativa al overlay
+    for (const key in campos) {
+        const elem = document.getElementById(`campo-${key}`);
+        if (!elem) continue;
+        const pdfPos = campos[key];
+
+        // Escala: convertir puntos PDF -> pixels del canvas
+        const x_px = (pdfPos.x / pdfOriginal.width) * w;
+        const y_px = (pdfPos.y / pdfOriginal.height) * h;
+
+        // Invertir Y: pdf y=0 abajo => screen y = canvasHeight - y_px
+        const top_px = h - y_px;
+
+        // Ajustar para que el input quede centrado verticalmente respecto a su altura
+        // Puedes cambiar width_base o setear estilo width en CSS si quieres fijo
+        const width_px = 220 * (w / pdfOriginal.width); // ancho base escalado
+        const height_px = 26 * (h / pdfOriginal.height);
+
+        elem.style.position = 'absolute';
+        elem.style.left = `${x_px}px`;
+        // Restar height_px para que el texto no salga fuera; ajustar si es necesario
+        elem.style.top  = `${top_px - height_px}px`;
+        elem.style.width = `${width_px}px`;
+        elem.style.height = `${height_px}px`;
+        elem.style.boxSizing = 'border-box';
+        elem.style.fontSize = `${12 * (h / pdfOriginal.height)}px`;
     }
 
-    renderPDF(url);
+    if (DEBUG_DRAW_BOXES) drawDebugBoxes();
+}
+
+function drawDebugBoxes() {
+    // Dibuja rectángulos en el canvas para ayudarte a calibrar (se borra al re-render)
+    ctx.save();
+    ctx.strokeStyle = 'red';
+    ctx.lineWidth = 1;
+    for (const key in campos) {
+        const pdfPos = campos[key];
+        const w = canvas.getBoundingClientRect().width;
+        const h = canvas.getBoundingClientRect().height;
+        const x_px = (pdfPos.x / pdfOriginal.width) * w;
+        const y_px = (pdfPos.y / pdfOriginal.height) * h;
+        const top_px = h - y_px;
+        const width_px = 220 * (w / pdfOriginal.width);
+        const height_px = 26 * (h / pdfOriginal.height);
+        ctx.strokeRect(x_px, top_px - height_px, width_px, height_px);
+    }
+    ctx.restore();
+}
+
+// Inicializar
+renderPDF(url);
 </script>
 {% endblock %}
