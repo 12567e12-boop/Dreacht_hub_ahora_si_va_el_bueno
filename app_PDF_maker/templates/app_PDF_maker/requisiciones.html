@@ -15,7 +15,6 @@
         width: 100%;
         height: 100vh;
         overflow: hidden;
-        background: #f0f0f0;
     }
 
     #pdf-canvas {
@@ -44,6 +43,14 @@
         box-sizing: border-box;
     }
 
+    
+    #campo-fecha_soli,
+    #campo-fecha_util,
+    #campo-fecha_surt
+     {
+        text-align: center;
+    }
+
     #submit-btn {
         position: fixed;
         bottom: 20px;
@@ -64,11 +71,19 @@
 
         <!-- Campos (coordenadas relativas %) -->
         <input type="text" name="obra" placeholder="obra" class="campo" id="campo-obra">
-        <input type="text" name="puesto" placeholder="Puesto" class="campo" id="campo-puesto">
-        <input type="text" name="fecha" placeholder="Fecha" class="campo" id="campo-fecha">
+        <input type="text" name="ubicacion" placeholder="ubicacion" class="campo" id="campo-ubicacion">
+        <input type="text" name="numero_de_articulos" placeholder="numero de articulos" class="campo" id="campo-numero_de_articulos">
+        <input type="date" name="fecha_soli"  class="campo" id="campo-fecha_soli">
+        <input type="date" name="fecha_util"  class="campo" id="campo-fecha_util">
+        <input type="date" name="fecha_surt"  class="campo" id="campo-fecha_surt">
+        <input type="text" name="contratista_soli" placeholder="Nombre completo" class="campo" id="campo-contratista_soli">
+        <input type="text" name="contratista_auto" placeholder="Nombre completo" class="campo" id="campo-contratista_auto">
+        <input type="text" name="area_util" placeholder="Ej. traumatologia" class="campo" id="campo-area_util">
 
-        <button id="submit-btn" type="submit">Generar PDF</button>
+        <button id="submit-btn" type="submit" class="btn btn-danger">Generar PDF</button>
     </form>
+
+
 </div>
 {% endblock %}
 
@@ -89,10 +104,30 @@ const pdfOriginal = { width: 612, height: 792 };
 
 // Coordenadas en puntos PDF: AJUSTA ESTOS VALORES a tu plantilla
 const campos = {
-    obra: { x: 175, y: 645 }, 
-    puesto: { x: 150, y: 10 },
-    fecha:  { x: 470, y: 660 },
+    obra: { x: 178, y: 640 },
+    ubicacion: { x: 192, y: 616},
+    numero_de_articulos: { x: 230, y: 592 },
+    fecha_soli:  { x: 480, y: 640 },
+    fecha_util:  { x: 480, y: 616 },
+    fecha_surt:  { x: 480, y: 592 },
+    contratista_soli: { x: 170, y: 562 },
+    contratista_auto: {x: 113, y: 533 },
+    area_util : {x: 163, y: 505}
 
+
+};
+
+// Fixed field sizes    
+const fieldScales = {
+    obra: { widthScale: 1.0, heightScale: 0.7, fontScale: 1.0 },
+    ubicacion: { widthScale: 0.94, heightScale: 0.7, fontScale: 1.0 },
+    numero_de_articulos: { widthScale: 0.77, heightScale: 0.7, fontScale: 1.0 },
+    fecha_soli: { widthScale: 0.4, heightScale: 0.7, fontScale: 1.0 },
+    fecha_util: { widthScale: 0.4, heightScale: 0.7, fontScale: 1.0 },
+    fecha_surt: { widthScale: 0.4, heightScale: 0.7, fontScale: 1.0 },
+    contratista_soli: { widthScale: 1.32, heightScale: 0.7, fontScale: 1.0 },
+    contratista_auto: { widthScale: 1.58, heightScale: 0.7, fontScale: 1.0 },
+    area_util: { widthScale: 1.35, heightScale: 0.7, fontScale: 1.0 },
 };
 
 // Flag de debug: dibuja cajas rojas donde se posicionan los campos
@@ -101,10 +136,11 @@ const DEBUG_DRAW_BOXES = false;
 function renderPDF(url) {
     pdfjsLib.getDocument(url).promise.then(pdf => {
         pdf.getPage(1).then(page => {
-            // Ajusta scale según quieras (puedes calcular scale para ajustar ancho al contenedor)
-            const desiredWidth = Math.min(container.clientWidth, window.innerWidth);
             const viewportUnscaled = page.getViewport({ scale: 1 });
-            const scale = desiredWidth / viewportUnscaled.width;
+            // Calcular scale para que quepa en ancho y alto del viewport (90% para margen)
+            const scaleWidth = (window.innerWidth * 0.9) / viewportUnscaled.width;
+            const scaleHeight = (window.innerHeight * 0.9) / viewportUnscaled.height;
+            const scale = Math.min(scaleWidth, scaleHeight);
             const viewport = page.getViewport({ scale });
 
             canvas.width = viewport.width;
@@ -118,14 +154,13 @@ function renderPDF(url) {
                 positionFields();
                 // Reposicionar en resize (con debounce)
                 let resizeTimer;
-                window.addEventListener('orientationchange', () => {
+                window.addEventListener('resize', () => {
                     clearTimeout(resizeTimer);
                     resizeTimer = setTimeout(() => {
-                        // re-render with new scale to fit container width
                         renderPDF(url);
                     }, 120);
                 });
-                
+
             });
         });
     }).catch(err => {
@@ -173,8 +208,9 @@ function positionFields() {
 
         // Ajustar para que el input quede centrado verticalmente respecto a su altura
         // Puedes cambiar width_base o setear estilo width en CSS si quieres fijo
-        const width_px = 220 * (w / pdfOriginal.width); // ancho base escalado
-        const height_px = 26 * (h / pdfOriginal.height);
+        const { widthScale, heightScale, fontScale } = fieldScales[key] || { widthScale: 1.0, heightScale: 0.7, fontScale: 1.0 };
+        const width_px = 220 * (w / pdfOriginal.width) * widthScale; // ancho base escalado con scale
+        const height_px = 26 * (h / pdfOriginal.height) * heightScale;
 
         elem.style.position = 'absolute';
         elem.style.left = `${x_px}px`;
@@ -183,7 +219,7 @@ function positionFields() {
         elem.style.width = `${width_px}px`;
         elem.style.height = `${height_px}px`;
         elem.style.boxSizing = 'border-box';
-        elem.style.fontSize = `${12 * (h / pdfOriginal.height)}px`;
+        elem.style.fontSize = `${12 * (h / pdfOriginal.height) * fontScale}px`;
     }
 
     if (DEBUG_DRAW_BOXES) drawDebugBoxes();
@@ -210,5 +246,7 @@ function drawDebugBoxes() {
 
 // Inicializar
 renderPDF(url);
+
+
 </script>
 {% endblock %}

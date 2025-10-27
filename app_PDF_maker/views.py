@@ -9,6 +9,7 @@ from io import BytesIO
 import os
 from django.conf import settings
 from PIL import Image
+from pypdf import PdfReader, PdfWriter
 
 
 # ===================================
@@ -22,31 +23,76 @@ def recursos(request):
 
 def requisiciones(request):
     if request.method == "POST":
-        nombre = request.POST.get('nombre', '')
-        puesto = request.POST.get('puesto', '')
-        fecha = request.POST.get('fecha', '')
+        obra = request.POST.get('obra', '')
+        ubicacion = request.POST.get('ubicacion', '')
+        numero_de_articulos = request.POST.get('numero_de_articulos', '')
+        fecha_soli = request.POST.get('fecha_soli', '')
+        fecha_util = request.POST.get('fecha_util', '')
+        fecha_surt = request.POST.get('fecha_surt', '')
+        contratista_soli = request.POST.get('contratista_soli', '')
+        contratista_auto = request.POST.get('contratista_auto', '')
+        area_util = request.POST.get('area_util', '')
 
         # PDF base
-        base_pdf = os.path.join(settings.BASE_DIR, 'app_PDF_maker', 'static', 'media', 'requiscion_template.pdf')
+        base_pdf_path = os.path.join(settings.BASE_DIR, 'app_PDF_maker', 'static', 'media', 'requiscion_template.pdf')
 
-        # Crear nuevo PDF con los datos encima
-        buffer = BytesIO()
-        c = canvas.Canvas(buffer, pagesize=letter)
-        c.drawImage(base_pdf, 0, 0, width=612, height=792)  # Tamaño carta
+        # Leer el PDF base con pypdf
+        reader = PdfReader(base_pdf_path)
+        writer = PdfWriter()
 
-        # Escribir los campos (ajusta coordenadas a tu template)
-        c.setFont("Helvetica", 10,)
+        # Copiar la primera página
+        page = reader.pages[0]
+        writer.add_page(page)
+
+        # Crear un buffer para el overlay
+        overlay_buffer = BytesIO()
+        c = canvas.Canvas(overlay_buffer, pagesize=letter)
+
+        # Escribir los campos (coordenadas ajustadas al template, y invertida para y=0 arriba)
+        height = 792
+        c.setFont("Helvetica", 20)  # Aumentar tamaño para debug
+        c.setFillColorRGB(1, 0, 0)  # Rojo para visibilidad
+        # Debug text at top-left
+        c.drawString(50, 750, f"Obra: {obra}")
+        c.drawString(50, 720, f"Ubicacion: {ubicacion}")
+        c.drawString(50, 690, f"Num Art: {numero_de_articulos}")
+        c.drawString(50, 660, f"Fecha Soli: {fecha_soli}")
+        c.drawString(50, 630, f"Fecha Util: {fecha_util}")
+        c.drawString(50, 600, f"Fecha Surt: {fecha_surt}")
+        c.drawString(50, 570, f"Contratista Soli: {contratista_soli}")
+        c.drawString(50, 540, f"Contratista Auto: {contratista_auto}")
+        c.drawString(50, 510, f"Area Util: {area_util}")
+        # Original positions (adjusted)
+        c.setFont("Helvetica", 10)
         c.setFillColorRGB(0, 0, 0)
-        c.drawString(150, 200, nombre)
-        c.drawString(150, 630, puesto)
-        c.drawString(150, 610, fecha)
+        c.drawString(178, height - 640, obra)
+        c.drawString(192, height - 616, ubicacion)
+        c.drawString(230, height - 592, numero_de_articulos)
+        c.drawString(480, height - 640, fecha_soli)
+        c.drawString(480, height - 616, fecha_util)
+        c.drawString(480, height - 592, fecha_surt)
+        c.drawString(170, height - 562, contratista_soli)
+        c.drawString(113, height - 533, contratista_auto)
+        c.drawString(163, height - 505, area_util)
 
         c.save()
-        buffer.seek(0)
+        overlay_buffer.seek(0)
 
-        # Descargar PDF resultante
-        response = HttpResponse(buffer, content_type='application/pdf')
-        response['Content-Disposition'] = 'attachment; filename="requisicion_completada.pdf"'
+        # Leer el overlay como PDF
+        overlay_reader = PdfReader(overlay_buffer)
+        overlay_page = overlay_reader.pages[0]
+
+        # Fusionar el overlay con la página base
+        page.merge_page(overlay_page)
+
+        # Escribir el PDF final
+        final_buffer = BytesIO()
+        writer.write(final_buffer)
+        final_buffer.seek(0)
+
+        # Mostrar PDF inline
+        response = HttpResponse(final_buffer, content_type='application/pdf')
+        response['Content-Disposition'] = 'inline; filename="requisicion_completada.pdf"'
         return response
 
     return render(request, 'app_PDF_maker/requisiciones.html')
@@ -117,7 +163,7 @@ def gafetes(request):
 
             buffer.seek(0)
             response = HttpResponse(buffer, content_type='application/pdf')
-            response['Content-Disposition'] = f'attachment; filename="{nombre_pdf}"'
+            response['Content-Disposition'] = f'inline; filename="{nombre_pdf}"'
             return response
 
     else:

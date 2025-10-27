@@ -16,6 +16,20 @@ class EmpleadoForm(forms.ModelForm):
     class Meta:
         model = Empleado
         exclude = ['gafete_pdf', 'fecha_alta', 'fecha_baja', 'nomina']
+        error_messages = {
+            'nombre': {
+                'required': 'Este campo es obligatorio.',
+            },
+            'foto': {
+                'required': 'Este campo es obligatorio.',
+            },
+            'puesto': {
+                'required': 'Este campo es obligatorio.',
+            },
+            'area': {
+                'required': 'Este campo es obligatorio.',
+            },
+        }
         widgets = {
             'nombre': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -23,22 +37,22 @@ class EmpleadoForm(forms.ModelForm):
             }),
             'puesto': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': '(default) Contratista'
+                'placeholder': 'Contratista'
             }),
             'direccion': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': '(Opcional)'
+                'placeholder': 'Dirección (Opcional)'
             }),
             'nss': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': '(Opcional)'
+                'placeholder': 'NSS (Opcional)'
             }),
             'tel': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': '(Opcional)'
+                'placeholder': 'Teléfono (Opcional)'
             }),
             'tel_emg': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': '(Opcional)'
+                'placeholder': 'Teléfono de Emergencia (Opcional)'
             }),
         }

@@ -10,7 +10,8 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        min-height: 100vh; /* centra verticalmente */
+        min-height: calc(100vh - 56px); /* Adjust for navbar height */
+        padding: 2rem 0; /* Add padding for better spacing */
     }
 
     .form-wrapper {
@@ -41,6 +42,26 @@
         width: 100%;
     }
 </style>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const fotoInput = document.querySelector('input[name="foto"]');
+        const fotoPreview = document.getElementById('foto-preview');
+
+        fotoInput.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    fotoPreview.src = e.target.result;
+                    fotoPreview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                fotoPreview.style.display = 'none';
+            }
+        });
+    });
+</script>
 {% endblock %}
 
 {% block content %}
@@ -59,6 +80,9 @@
 
             <div class="mb-3">
                 {{ form.foto.label_tag }}
+                <div style="text-align: center; margin-bottom: 10px;">
+                    <img id="foto-preview" src="#" alt="Vista previa de la foto" style="display: none; max-width: 200px; max-height: 200px; border-radius: 5px;">
+                </div>
                 {{ form.foto }}
                 {% if form.foto.errors %}
                     <div class="text-danger">{{ form.foto.errors }}</div>

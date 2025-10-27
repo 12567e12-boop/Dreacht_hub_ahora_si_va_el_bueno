@@ -5,11 +5,11 @@ class Empleado(models.Model):
     id_empleado = models.AutoField(             primary_key=True, editable=False, unique=True,db_index=True)
     nombre = models.CharField(                  max_length=50)
     foto = models.ImageField(                   )  
-    puesto = models.CharField(                  max_length=50, default='CONTRATISTA')
-    direccion = models.CharField(               max_length=200, default='N/A')
-    nss = models.CharField(                     max_length=50, default='N/A')
-    tel = models.CharField(                     max_length=50, default='N/A')
-    tel_emg = models.CharField(                 max_length=50, default='N/A')
+    puesto = models.CharField(                  max_length=50)
+    direccion = models.CharField(               max_length=200, blank=True)
+    nss = models.CharField(                     max_length=50, blank=True)
+    tel = models.CharField(                     max_length=50, blank=True)
+    tel_emg = models.CharField(                 max_length=50, blank=True)
     gafete_pdf = models.FileField(              upload_to="gafetes/")
     fecha_alta = models.DateField(              auto_now_add=True)
     fecha_baja = models.DateField(              blank=True, null=True)   
@@ -47,6 +47,7 @@ class Requisicion(models.Model):
     area_donde_se_utilizara = models.CharField(max_length=255)
     hoja_numero = models.PositiveIntegerField(default=1, editable=False)
     hoja_total = models.PositiveIntegerField(default=1, editable=False)
+    materiales = models.JSONField(default=list, blank=True)
 
     class Meta:
         verbose_name = "Requisición"
