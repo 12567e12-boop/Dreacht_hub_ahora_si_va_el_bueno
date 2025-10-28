@@ -134,6 +134,9 @@ const fieldScales = {
 const DEBUG_DRAW_BOXES = false;
 
 function renderPDF(url) {
+    // Clear canvas before rendering
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
     pdfjsLib.getDocument(url).promise.then(pdf => {
         pdf.getPage(1).then(page => {
             const viewportUnscaled = page.getViewport({ scale: 1 });
