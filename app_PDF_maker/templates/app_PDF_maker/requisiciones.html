@@ -4,26 +4,57 @@
 
 {% block extra_head %}
 <style>
-    body, html { margin: 0; padding: 0; height: 100%; }
-    #pdf-container { position: relative; width: 100%; height: 100vh; overflow: hidden; }
-    #pdf-canvas { display: block; margin: 0 auto; max-width: 100%; height: auto; }
-    #form-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+    body, html { 
+        margin: 0; 
+        padding: 0; 
+        height: 100%; 
+        overflow-x: hidden;
+    }
+    #pdf-container { 
+        position: relative; 
+        width: 100%; 
+        height: auto; 
+        min-height: 100vh;
+        overflow: visible; 
+        background: #f0f0f0;
+    }
+    #pdf-canvas { 
+        display: block; 
+        margin: 0 auto; 
+        max-width: 100%; 
+        height: auto;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    #form-overlay { 
+        position: absolute; 
+        top: 0; 
+        left: 0; 
+        width: 100%; 
+        height: 100%; 
+        pointer-events: none;
+        z-index: 5;
+    }
     .campo {
         position: absolute;
         font-size: 14px;
         border: 1px solid #777;
         border-radius: 4px;
         padding: 3px 6px;
-        background-color: rgba(255, 255, 255, 0.8);
+        background-color: rgba(255, 255, 255, 0.9);
         pointer-events: auto;
         box-sizing: border-box;
+        z-index: 10;
     }
     #campo-fecha_soli, #campo-fecha_util, #campo-fecha_surt { text-align: center; }
     #submit-btn {
-        position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-        padding: 8px 18px; font-weight: bold;
+        position: fixed; 
+        bottom: 20px; 
+        left: 50%; 
+        transform: translateX(-50%);
+        padding: 8px 18px; 
+        font-weight: bold;
+        z-index: 1000;
     }
-
 </style>
 {% endblock %}
 
@@ -98,9 +129,8 @@ const campos = {
     contratista_soli: { x: 170, y: 562 },
     contratista_auto: { x: 113, y: 533 },
     area_util: { x: 163, y: 505 },
-    fecha_hora_creacion: { x: 450, y: 562 },
-    observaciones: { x: 465, y: 195},
-    // Campos para items (14 filas, posiciones temporales para ajuste)
+    observaciones: { x: 464, y: 64},
+    // Campos para items (14 filas)
     item1_descripcion: { x: 46, y: 430 },
     item1_unidad: { x: 394, y: 430 },
     item1_cantidad: { x: 315, y: 430 },
@@ -156,116 +186,167 @@ const fieldScales = {
     contratista_auto: { widthScale: 1.58, heightScale: 0.7, fontScale: 1.0 },
     area_util: { widthScale: 1.35, heightScale: 0.7, fontScale: 1.0 },
     fecha_hora_creacion: { widthScale: 1.2, heightScale: 0.7, fontScale: 0.9 },
-    observaciones: { widthScale: 0.55, heightScale: 10.0, fontScale: 1.0 },
+    observaciones: { widthScale: 0.55, heightScale: 15, fontScale: 1.0 },
     item_descripcion: { widthScale: 1.21, heightScale: 0.9, fontScale: 1.0 },
     item_unidad: { widthScale: 0.311, heightScale: 0.9, fontScale: 1.0 },
     item_cantidad: { widthScale: 0.343, heightScale: 0.9, fontScale: 1.0 }
 };
 
-const DEBUG_DRAW_BOXES = false;
-
+// SOLUCIÓN COMPLETA - Reiniciar todo el enfoque
 function renderPDF(url) {
+    // Limpiar completamente
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Resetear estilos del contenedor
+    container.style.position = 'relative';
+    container.style.width = '100%';
+    container.style.height = 'auto';
+    container.style.overflow = 'visible';
 
     pdfjsLib.getDocument(url).promise.then(pdf => {
         pdf.getPage(1).then(page => {
             const viewportUnscaled = page.getViewport({ scale: 1 });
-            const scaleWidth = (window.innerWidth * 0.9) / viewportUnscaled.width;
-            const scaleHeight = (window.innerHeight * 0.9) / viewportUnscaled.height;
-            const scale = Math.min(scaleWidth, scaleHeight);
+            
+            // Usar escala completa
+            const scale = Math.min(
+                window.innerWidth / viewportUnscaled.width,
+                window.innerHeight / viewportUnscaled.height
+            );
+            
             const viewport = page.getViewport({ scale });
 
+            // Configurar canvas con dimensiones exactas
             canvas.width = viewport.width;
             canvas.height = viewport.height;
-            canvas.style.width = `${viewport.width}px`;
-            canvas.style.height = `${viewport.height}px`;
+            canvas.style.width = viewport.width + 'px';
+            canvas.style.height = viewport.height + 'px';
+            canvas.style.display = 'block';
+            canvas.style.margin = '0 auto';
 
-            const renderContext = { canvasContext: ctx, viewport };
+            console.log('Canvas dimensions:', canvas.width, canvas.height);
+            console.log('Viewport scale:', scale);
+
+            const renderContext = {
+                canvasContext: ctx,
+                viewport: viewport
+            };
+
             page.render(renderContext).promise.then(() => {
-                syncOverlayToCanvas();
-                positionFields();
-                let resizeTimer;
-                window.addEventListener('resize', () => {
-                    clearTimeout(resizeTimer);
-                    resizeTimer = setTimeout(() => {
-                        renderPDF(url);
-                    }, 120);
+                console.log('PDF rendered, positioning fields...');
+                positionFieldsDirect();
+                
+                window.addEventListener('resize', function() {
+                    setTimeout(() => renderPDF(url), 100);
                 });
             });
         });
     }).catch(err => console.error("Error cargando PDF:", err));
 }
 
-function syncOverlayToCanvas() {
+// NUEVA FUNCIÓN - Posicionamiento directo y simple
+function positionFieldsDirect() {
+    console.log('=== STARTING FIELD POSITIONING ===');
+    
     const canvasRect = canvas.getBoundingClientRect();
     const containerRect = container.getBoundingClientRect();
+    
+    console.log('Canvas rect:', canvasRect);
+    console.log('Container rect:', containerRect);
+
+    // POSICIONAR EL OVERLAY SOBRE EL CANVAS EXACTAMENTE
     overlayForm.style.position = 'absolute';
-    overlayForm.style.left = `${canvasRect.left - containerRect.left}px`;
-    overlayForm.style.top  = `${canvasRect.top - containerRect.top}px`;
-    overlayForm.style.width = `${canvasRect.width}px`;
-    overlayForm.style.height = `${canvasRect.height}px`;
+    overlayForm.style.left = canvasRect.left - containerRect.left + 'px';
+    overlayForm.style.top = canvasRect.top - containerRect.top + 'px';
+    overlayForm.style.width = canvasRect.width + 'px';
+    overlayForm.style.height = canvasRect.height + 'px';
     overlayForm.style.pointerEvents = 'auto';
     overlayForm.style.overflow = 'visible';
-}
 
-function positionFields() {
-    const overlayRect = overlayForm.getBoundingClientRect();
-    const canvasRect = canvas.getBoundingClientRect();
-    const w = canvasRect.width;
-    const h = canvasRect.height;
+    console.log('Overlay positioned at:', {
+        left: overlayForm.style.left,
+        top: overlayForm.style.top,
+        width: overlayForm.style.width,
+        height: overlayForm.style.height
+    });
 
+    // POSICIONAR CADA CAMPO
     for (const key in campos) {
         const elem = document.getElementById(`campo-${key}`);
-        if (!elem) continue;
-        const pdfPos = campos[key];
-        const x_px = (pdfPos.x / pdfOriginal.width) * w;
-        const y_px = (pdfPos.y / pdfOriginal.height) * h;
-        const top_px = h - y_px;
+        if (!elem) {
+            console.warn('Element not found:', `campo-${key}`);
+            continue;
+        }
 
-        // Determine scale key based on field type
+        const pdfPos = campos[key];
+        
+        // Calcular posición relativa al PDF original
+        const x_percent = pdfPos.x / pdfOriginal.width;
+        const y_percent = pdfPos.y / pdfOriginal.height;
+        
+        // Convertir a píxeles en el canvas renderizado
+        const x_px = x_percent * canvasRect.width;
+        const y_px = y_percent * canvasRect.height;
+        
+        // Invertir Y coordinate (PDF vs HTML coordinate system)
+        const top_px = canvasRect.height - y_px;
+
+        console.log(`Field ${key}:`, {
+            pdfPos,
+            percentages: { x_percent, y_percent },
+            calculated: { x_px, y_px, top_px }
+        });
+
+        // Determinar escalas
         let scaleKey = key;
-        if (key.startsWith('item') && key.includes('_descripcion')) {
-            scaleKey = 'item_descripcion';
-        } else if (key.startsWith('item') && key.includes('_unidad')) {
-            scaleKey = 'item_unidad';
-        } else if (key.startsWith('item') && key.includes('_cantidad')) {
-            scaleKey = 'item_cantidad';
+        if (key.startsWith('item')) {
+            if (key.includes('_descripcion')) scaleKey = 'item_descripcion';
+            else if (key.includes('_unidad')) scaleKey = 'item_unidad';
+            else if (key.includes('_cantidad')) scaleKey = 'item_cantidad';
         }
 
         const { widthScale, heightScale, fontScale } = fieldScales[scaleKey] || { widthScale: 1.0, heightScale: 0.7, fontScale: 1.0 };
-        const width_px = 220 * (w / pdfOriginal.width) * widthScale;
-        const height_px = 26 * (h / pdfOriginal.height) * heightScale;
+        
+        // Calcular dimensiones
+        const width_px = 220 * (canvasRect.width / pdfOriginal.width) * widthScale;
+        const height_px = 26 * (canvasRect.height / pdfOriginal.height) * heightScale;
 
+        // APLICAR ESTILOS DIRECTAMENTE
         elem.style.position = 'absolute';
-        elem.style.left = `${x_px}px`;
-        elem.style.top  = `${top_px - height_px}px`;
-        elem.style.width = `${width_px}px`;
-        elem.style.height = `${height_px}px`;
+        elem.style.left = x_px + 'px';
+        elem.style.top = (top_px - height_px) + 'px'; // Ajustar para que el campo esté sobre la posición
+        elem.style.width = width_px + 'px';
+        elem.style.height = height_px + 'px';
         elem.style.boxSizing = 'border-box';
-        elem.style.fontSize = `${12 * (h / pdfOriginal.height) * fontScale}px`;
-    }
+        elem.style.fontSize = (12 * (canvasRect.height / pdfOriginal.height) * fontScale) + 'px';
+        elem.style.zIndex = '10';
+        
+        console.log(`Field ${key} positioned at:`, {
+            left: elem.style.left,
+            top: elem.style.top,
+            width: elem.style.width,
+            height: elem.style.height
+        });
 
-    if (DEBUG_DRAW_BOXES) drawDebugBoxes();
+        // DEBUG VISUAL - agregar borde rojo a campos problemáticos
+        if (key.includes('item10') || key.includes('item11') || key.includes('item12') || key.includes('item13') || key.includes('item14')) {
+            elem.style.border = '2px solid red';
+            console.log(`PROBLEMATIC FIELD ${key}:`, {
+                position: { x_px, y_px, top_px },
+                dimensions: { width_px, height_px },
+                actualStyle: {
+                    left: elem.style.left,
+                    top: elem.style.top,
+                    width: elem.style.width,
+                    height: elem.style.height
+                }
+            });
+        }
+    }
+    
+    console.log('=== FIELD POSITIONING COMPLETE ===');
 }
 
-function drawDebugBoxes() {
-    ctx.save();
-    ctx.strokeStyle = 'red';
-    ctx.lineWidth = 1;
-    for (const key in campos) {
-        const pdfPos = campos[key];
-        const w = canvas.getBoundingClientRect().width;
-        const h = canvas.getBoundingClientRect().height;
-        const x_px = (pdfPos.x / pdfOriginal.width) * w;
-        const y_px = (pdfPos.y / pdfOriginal.height) * h;
-        const top_px = h - y_px;
-        const width_px = 220 * (w / pdfOriginal.width);
-        const height_px = 26 * (h / pdfOriginal.height);
-        ctx.strokeRect(x_px, top_px - height_px, width_px, height_px);
-    }
-    ctx.restore();
-}
-
-renderPDF(url);
+// Iniciar
+setTimeout(() => renderPDF(url), 100);
 </script>
 {% endblock %}
