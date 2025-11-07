@@ -83,47 +83,47 @@ const campos = {
     fecha_hora_creacion: { x: 450, y: 562 },
     observaciones: { x: 465, y: 195},
     // Campos para items (14 filas, posiciones temporales para ajuste)
-    item1_descripcion: { x: 46, y: 435 },
-    item1_unidad: { x: 390, y: 450 },
-    item1_cantidad: { x: 315, y: 450 },
-    item2_descripcion: { x: 46, y: 390 },
-    item2_unidad: { x: 390, y: 430 },
+    item1_descripcion: { x: 46, y: 430 },
+    item1_unidad: { x: 394, y: 430 },
+    item1_cantidad: { x: 315, y: 430 },
+    item2_descripcion: { x: 46, y: 401 },
+    item2_unidad: { x: 394, y: 430 },
     item2_cantidad: { x: 315, y: 430 },
-    item3_descripcion: { x: 46, y: 390 },
-    item3_unidad: { x: 390, y: 410 },
+    item3_descripcion: { x: 46, y: 373 },
+    item3_unidad: { x: 394, y: 410 },
     item3_cantidad: { x: 315, y: 410 },
-    item4_descripcion: { x: 46, y: 390 },
-    item4_unidad: { x: 390, y: 390 },
-    item4_cantidad: { x: 315, y: 390 },
-    item5_descripcion: { x: 46, y: 390 },
-    item5_unidad: { x: 390, y: 370 },
+    item4_descripcion: { x: 46, y: 345 },
+    item4_unidad: { x: 394, y: 390 },
+    item4_cantidad: { x: 315, y: 316 },
+    item5_descripcion: { x: 46, y: 317 },
+    item5_unidad: { x: 394, y: 370 },
     item5_cantidad: { x: 315, y: 370 },
-    item6_descripcion: { x: 46, y: 390 },
-    item6_unidad: { x: 390, y: 350 },
+    item6_descripcion: { x: 46, y: 289 },
+    item6_unidad: { x: 394, y: 350 },
     item6_cantidad: { x: 315, y: 350 },
-    item7_descripcion: { x: 46, y: 390 },
-    item7_unidad: { x: 390, y: 330 },
+    item7_descripcion: { x: 46, y: 260 },
+    item7_unidad: { x: 394, y: 330 },
     item7_cantidad: { x: 315, y: 330 },
-    item8_descripcion: { x: 46, y: 390 },
-    item8_unidad: { x: 390, y: 310 },
+    item8_descripcion: { x: 46, y: 232 },
+    item8_unidad: { x: 394, y: 310 },
     item8_cantidad: { x: 315, y: 310 },
-    item9_descripcion: { x: 46, y: 390 },
-    item9_unidad: { x: 390, y: 290 },
+    item9_descripcion: { x: 46, y: 203 },
+    item9_unidad: { x: 394, y: 290 },
     item9_cantidad: { x: 315, y: 290 },
-    item10_descripcion: { x: 46, y: 390 },
-    item10_unidad: { x: 390, y: 270 },
+    item10_descripcion: { x: 46, y: 178 },
+    item10_unidad: { x: 394, y: 270 },
     item10_cantidad: { x: 315, y: 270 },
-    item11_descripcion: { x: 46, y: 390 },
-    item11_unidad: { x: 390, y: 250 },
+    item11_descripcion: { x: 46, y: 150 },
+    item11_unidad: { x: 394, y: 250 },
     item11_cantidad: { x: 315, y: 250 },
-    item12_descripcion: { x: 46, y: 390 },
-    item12_unidad: { x: 390, y: 230 },
+    item12_descripcion: { x: 46, y: 122 },
+    item12_unidad: { x: 394, y: 230 },
     item12_cantidad: { x: 315, y: 230 },
-    item13_descripcion: { x: 46, y: 390 },
-    item13_unidad: { x: 390, y: 210 },
+    item13_descripcion: { x: 46, y: 94 },
+    item13_unidad: { x: 394, y: 210 },
     item13_cantidad: { x: 315, y: 210 },
-    item14_descripcion: { x: 46, y: 390 },
-    item14_unidad: { x: 390, y: 190 },
+    item14_descripcion: { x: 46, y: 66 },
+    item14_unidad: { x: 394, y: 190 },
     item14_cantidad: { x: 315, y: 190 }
 };
 
@@ -139,9 +139,9 @@ const fieldScales = {
     area_util: { widthScale: 1.35, heightScale: 0.7, fontScale: 1.0 },
     fecha_hora_creacion: { widthScale: 1.2, heightScale: 0.7, fontScale: 0.9 },
     observaciones: { widthScale: 0.55, heightScale: 10.0, fontScale: 1.0 },
-    item_descripcion: { widthScale: 1.5, heightScale: 0.7, fontScale: 1.0 },
-    item_unidad: { widthScale: 0.1, heightScale: 0.1, fontScale: 1.0 },
-    item_cantidad: { widthScale: 0.5, heightScale: 0.7, fontScale: 1.0 }
+    item_descripcion: { widthScale: 1.21, heightScale: 0.9, fontScale: 1.0 },
+    item_unidad: { widthScale: 0.3, heightScale: 0.9, fontScale: 1.0 },
+    item_cantidad: { widthScale: 0.34, heightScale: 0.9, fontScale: 1.0 }
 };
 
 const DEBUG_DRAW_BOXES = false;
@@ -204,7 +204,17 @@ function positionFields() {
         const y_px = (pdfPos.y / pdfOriginal.height) * h;
         const top_px = h - y_px;
 
-        const { widthScale, heightScale, fontScale } = fieldScales[key] || { widthScale: 1.0, heightScale: 0.7, fontScale: 1.0 };
+        // Determine scale key based on field type
+        let scaleKey = key;
+        if (key.startsWith('item') && key.includes('_descripcion')) {
+            scaleKey = 'item_descripcion';
+        } else if (key.startsWith('item') && key.includes('_unidad')) {
+            scaleKey = 'item_unidad';
+        } else if (key.startsWith('item') && key.includes('_cantidad')) {
+            scaleKey = 'item_cantidad';
+        }
+
+        const { widthScale, heightScale, fontScale } = fieldScales[scaleKey] || { widthScale: 1.0, heightScale: 0.7, fontScale: 1.0 };
         const width_px = 220 * (w / pdfOriginal.width) * widthScale;
         const height_px = 26 * (h / pdfOriginal.height) * heightScale;
 
