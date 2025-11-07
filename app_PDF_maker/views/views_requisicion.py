@@ -11,6 +11,7 @@ from reportlab.pdfgen import canvas
 from pypdf import PdfReader, PdfWriter
 
 from empleados.models import Requisicion
+from app_PDF_maker.forms import RequisicionForm
 
 # Función auxiliar para convertir string a date
 def parse_fecha(fecha_str):
@@ -27,19 +28,30 @@ def requisiciones(request):
     fecha_hora_creacion = datetime.now(tz)
 
     if request.method == "POST":
-        # --- Recoger datos del formulario ---
-        obra = request.POST.get('obra', '')
-        ubicacion = request.POST.get('ubicacion', '')
-        numero_de_articulos = request.POST.get('numero_de_articulos', '')
+        form = RequisicionForm(request.POST)
+        if form.is_valid():
+            # --- Datos validados ---
+            obra = form.cleaned_data['obra']
+            ubicacion = form.cleaned_data['ubicacion']
+            numero_de_articulos = form.cleaned_data.get('numero_de_articulos', 0)
 
-        fecha_soli = parse_fecha(request.POST.get('fecha_soli', ''))
-        fecha_util = parse_fecha(request.POST.get('fecha_util', ''))
-        fecha_surt = parse_fecha(request.POST.get('fecha_surt', ''))
+            fecha_soli = form.cleaned_data['fecha_soli']
+            fecha_util = form.cleaned_data['fecha_util']
+            fecha_surt = form.cleaned_data['fecha_surt']
 
-        contratista_soli = request.POST.get('contratista_soli', '')
-        contratista_auto = request.POST.get('contratista_auto', '')
-        area_util = request.POST.get('area_util', '')
-        observaciones = request.POST.get('observaciones', '')
+            contratista_soli = form.cleaned_data['contratista_soli']
+            contratista_auto = form.cleaned_data['contratista_auto']
+            area_util = form.cleaned_data['area_util']
+            observaciones = form.cleaned_data.get('observaciones', '')
+        else:
+            # --- Si no es válido, render con errores ---
+            fecha_str = fecha_hora_creacion.strftime("%d/%m/%Y")
+            hora_str = fecha_hora_creacion.strftime("%H:%M")
+            return render(request, 'app_PDF_maker/requisiciones.html', {
+                'form': form,
+                "fecha_creacion": fecha_str,
+                "hora_creacion": hora_str
+            })
 
 
 
@@ -164,9 +176,11 @@ def requisiciones(request):
             return HttpResponse(f"Error generando PDF: {str(e)}", status=500)
 
     # --- GET request: precargar formulario ---
+    form = RequisicionForm()
     fecha_str = fecha_hora_creacion.strftime("%d/%m/%Y")
     hora_str = fecha_hora_creacion.strftime("%H:%M")
     return render(request, 'app_PDF_maker/requisiciones.html', {
+        'form': form,
         "fecha_creacion": fecha_str,
         "hora_creacion": hora_str
     })

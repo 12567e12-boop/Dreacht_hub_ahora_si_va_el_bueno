@@ -1,25 +1,36 @@
-# TODO: Arreglar formulario de requisiciones - Texto no visible en PDF
+# TODO: Implementar Validación de Formularios en Requisiciones
 
 ## Información Recopilada
-- El formulario de requisiciones genera un PDF, pero el texto no aparece en los lugares correctos.
-- El PDF base es 'requiscion_template.pdf', un PDF estático donde se dibuja texto encima usando ReportLab.
-- En views.py, se crea un overlay con canvas.Canvas y se fusiona con el PDF base usando pypdf.
-- Las coordenadas en el template HTML están definidas desde la parte superior (y=0 arriba), pero en views.py se invierten incorrectamente con height - y, causando que el texto se dibuje en posiciones equivocadas (cerca de abajo en lugar de arriba).
+- El formulario actual en `requisiciones.html` es HTML puro sin validaciones Django.
+- La vista `views_requisicion.py` procesa datos manualmente con `request.POST`.
+- Modelo `Requisicion` en `empleados/models.py` define los campos.
+- `forms.py` tiene `EmpleadoForm`, pero falta `RequisicionForm`.
+- Campos principales a validar: obra, ubicacion, numero_de_articulos, fecha_soli, fecha_util, fecha_surt, contratista_soli, contratista_auto, area_util, observaciones.
+- Items (14 filas) son dinámicos; validar manualmente por ahora.
 
-## Plan de Corrección
-- Ajustar las coordenadas en views.py para usar y directamente (sin invertir), ya que las coordenadas del HTML están desde arriba.
-- Remover el texto de debug en rojo para limpiar el PDF.
-- Verificar que el merge del overlay funcione correctamente.
-
-## Pasos a Seguir
-- [x] Editar app_PDF_maker/views.py: Cambiar las coordenadas de drawString para usar y directamente en lugar de height - y.
-- [x] Agregar debug temporal (texto rojo en la parte superior) para verificar que los datos se capturan correctamente.
-- [ ] Probar el formulario generando un PDF y verificar que el texto aparezca en las posiciones correctas.
-- [ ] Si aún no funciona, ajustar coordenadas manualmente basándose en el template PDF.
+## Plan
+1. Crear `RequisicionForm` en `app_PDF_maker/forms.py` con validaciones:
+   - Campos requeridos: obra, ubicacion, fecha_soli, contratista_soli, contratista_auto, area_util.
+   - numero_de_articulos: entero positivo.
+   - Fechas: validar orden (fecha_soli <= fecha_util <= fecha_surt).
+   - Longitudes: según modelo (e.g., obra max 200).
+2. Modificar `app_PDF_maker/views/views_requisicion.py`:
+   - Usar `RequisicionForm` en GET y POST.
+   - Validar en POST; si inválido, render con errores.
+3. Actualizar `app_PDF_maker/templates/app_PDF_maker/requisiciones.html`:
+   - Cambiar inputs a `{{ form.obra }}`, etc., manteniendo attrs para posiciones absolutas.
+   - Agregar manejo de errores: `{{ form.errors }}` o por campo.
+4. Validar items manualmente en vista (descripción requerida si presente, cantidad numérica).
 
 ## Archivos Dependientes
-- app_PDF_maker/views.py (principal)
-- app_PDF_maker/templates/app_PDF_maker/requisiciones.html (para referencia de coordenadas)
+- `app_PDF_maker/forms.py`: Agregar RequisicionForm.
+- `app_PDF_maker/views/views_requisicion.py`: Modificar para usar form.
+- `app_PDF_maker/templates/app_PDF_maker/requisiciones.html`: Actualizar template.
+- `empleados/models.py`: Referencia para campos.
 
-## Seguimiento
-- Después de editar, ejecutar el servidor y probar el formulario.
+## Pasos de Seguimiento
+- [x] Implementar RequisicionForm.
+- [x] Modificar vista.
+- [x] Actualizar template.
+- [x] Probar validaciones: campos vacíos, tipos incorrectos, fechas inválidas.
+- [x] Verificar generación de PDF solo si válido.

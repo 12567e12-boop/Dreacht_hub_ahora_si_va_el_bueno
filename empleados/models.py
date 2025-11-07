@@ -47,6 +47,7 @@ class Requisicion(models.Model):
     contratista_soli = models.CharField(max_length=200, blank=True)
     contratista_auto = models.CharField(max_length=200, blank=True)
     area_util = models.CharField(max_length=200, blank=True)
+    observaciones = models.TextField(blank=True, null=True)
     fecha_hora_creacion = models.DateTimeField(null=True, blank= True)  # NUEVO CAMPO
 
     def save(self, *args, **kwargs):

@@ -35,16 +35,17 @@
         {% csrf_token %}
 
         <!-- Campos (coordenadas relativas %) -->
-        <input type="text" name="obra" placeholder="obra" class="campo" id="campo-obra">
-        <input type="text" name="ubicacion" placeholder="ubicacion" class="campo" id="campo-ubicacion">
-        <input type="text" name="numero_de_articulos" placeholder="numero de articulos" class="campo" id="campo-numero_de_articulos">
-        <input type="date" name="fecha_soli" class="campo" id="campo-fecha_soli">
-        <input type="date" name="fecha_util" class="campo" id="campo-fecha_util">
-        <input type="date" name="fecha_surt" class="campo" id="campo-fecha_surt">
-        <input type="text" name="contratista_soli" placeholder="Nombre completo" class="campo" id="campo-contratista_soli">
-        <input type="text" name="contratista_auto" placeholder="Nombre completo" class="campo" id="campo-contratista_auto">
-        <input type="text" name="area_util" placeholder="Ej. traumatologia" class="campo" id="campo-area_util">
-        <textarea name="observaciones" placeholder="Observaciones" class="campo" id="campo-observaciones" rows="4" cols="50"></textarea>
+        {{ form.obra }}
+        {{ form.ubicacion }}
+        {{ form.numero_de_articulos }}
+        {{ form.fecha_soli }}
+        {{ form.fecha_util }}
+        {{ form.fecha_surt }}
+        {{ form.contratista_soli }}
+        {{ form.contratista_auto }}
+        {{ form.area_util }}
+        {{ form.observaciones }}
+
 
         <!-- Campos para items (14 filas) -->
         {% for i in "1234567891011121314" %}
@@ -55,6 +56,22 @@
 
         <button id="submit-btn" type="submit" class="btn btn-danger">Generar PDF</button>
     </form>
+
+    {% if form.errors %}
+    <div style="position: fixed; top: 10px; right: 10px; background: red; color: white; padding: 10px; border-radius: 5px;">
+        <strong>Errores en el formulario:</strong>
+        <ul>
+            {% for field in form %}
+                {% for error in field.errors %}
+                    <li>{{ field.label }}: {{ error }}</li>
+                {% endfor %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}
+                <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}
 

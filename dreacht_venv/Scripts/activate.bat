@@ -8,7 +8,7 @@ if defined _OLD_CODEPAGE (
     "%SystemRoot%\System32\chcp.com" 65001 > nul
 )
 
-set "VIRTUAL_ENV=C:\Users\dreat\OneDrive\Escritorio\dreacht_hub_1.1\dreacht_venv"
+set "VIRTUAL_ENV=C:\Users\Orobas\Desktop\proyecto_python\dreacht_venv"
 
 if not defined PROMPT set PROMPT=$P$G
 
