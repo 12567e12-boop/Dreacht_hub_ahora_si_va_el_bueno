@@ -1,14 +1,13 @@
 from django.urls import path
-from . import views
+from .views import views_requisicion as views_requisicion
+from .views import views_gafete as views_gafete
 
 
 urlpatterns = [
-    path('', views.home, name='home'),
-    path('recursos/', views.recursos, name='recursos'),
-    path('requisiciones/', views.requisiciones, name='requisiciones'),
-    path('gafetes/', views.gafetes, name='gafetes')
-    
+    path('', views_gafete.home, name='home'),
+    path('recursos/', views_gafete.recursos, name='recursos'),
+    path('requisiciones/', views_requisicion.requisiciones, name='requisiciones'),
+    path('gafetes/', views_gafete.gafetes, name='gafetes')
+
 
 ]
-
-

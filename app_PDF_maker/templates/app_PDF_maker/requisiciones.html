@@ -4,34 +4,10 @@
 
 {% block extra_head %}
 <style>
-    body, html {
-        margin: 0;
-        padding: 0;
-        height: 100%;
-    }
-
-    #pdf-container {
-        position: relative;
-        width: 100%;
-        height: 100vh;
-        overflow: hidden;
-    }
-
-    #pdf-canvas {
-        display: block;
-        margin: 0 auto;
-        max-width: 100%;
-        height: auto;
-    }
-
-    #form-overlay {
-        position: absolute;
-        top: 0; left: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none; /* inputs los reactivamos con JS */
-    }
-
+    body, html { margin: 0; padding: 0; height: 100%; }
+    #pdf-container { position: relative; width: 100%; height: 100vh; overflow: hidden; }
+    #pdf-canvas { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+    #form-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
     .campo {
         position: absolute;
         font-size: 14px;
@@ -39,25 +15,13 @@
         border-radius: 4px;
         padding: 3px 6px;
         background-color: rgba(255, 255, 255, 0.8);
-        pointer-events: auto; /* habilita interacción */
+        pointer-events: auto;
         box-sizing: border-box;
     }
-
-    
-    #campo-fecha_soli,
-    #campo-fecha_util,
-    #campo-fecha_surt
-     {
-        text-align: center;
-    }
-
+    #campo-fecha_soli, #campo-fecha_util, #campo-fecha_surt { text-align: center; }
     #submit-btn {
-        position: fixed;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        padding: 8px 18px;
-        font-weight: bold;
+        position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+        padding: 8px 18px; font-weight: bold;
     }
 </style>
 {% endblock %}
@@ -73,17 +37,23 @@
         <input type="text" name="obra" placeholder="obra" class="campo" id="campo-obra">
         <input type="text" name="ubicacion" placeholder="ubicacion" class="campo" id="campo-ubicacion">
         <input type="text" name="numero_de_articulos" placeholder="numero de articulos" class="campo" id="campo-numero_de_articulos">
-        <input type="date" name="fecha_soli"  class="campo" id="campo-fecha_soli">
-        <input type="date" name="fecha_util"  class="campo" id="campo-fecha_util">
-        <input type="date" name="fecha_surt"  class="campo" id="campo-fecha_surt">
+        <input type="date" name="fecha_soli" class="campo" id="campo-fecha_soli">
+        <input type="date" name="fecha_util" class="campo" id="campo-fecha_util">
+        <input type="date" name="fecha_surt" class="campo" id="campo-fecha_surt">
         <input type="text" name="contratista_soli" placeholder="Nombre completo" class="campo" id="campo-contratista_soli">
         <input type="text" name="contratista_auto" placeholder="Nombre completo" class="campo" id="campo-contratista_auto">
         <input type="text" name="area_util" placeholder="Ej. traumatologia" class="campo" id="campo-area_util">
+        <textarea name="observaciones" placeholder="Observaciones" class="campo" id="campo-observaciones" rows="4" cols="50"></textarea>
+
+        <!-- Campos para items (14 filas) -->
+        {% for i in "1234567891011121314" %}
+        <input type="text" name="item{{ i }}_descripcion" placeholder="Descripción" class="campo" id="campo-item{{ i }}_descripcion">
+        <input type="text" name="item{{ i }}_unidad" placeholder="Unidad" class="campo" id="campo-item{{ i }}_unidad">
+        <input type="number" step="0.01" name="item{{ i }}_cantidad" placeholder="Cantidad" class="campo" id="campo-item{{ i }}_cantidad">
+        {% endfor %}
 
         <button id="submit-btn" type="submit" class="btn btn-danger">Generar PDF</button>
     </form>
-
-
 </div>
 {% endblock %}
 
@@ -98,26 +68,65 @@ const canvas = document.getElementById('pdf-canvas');
 const ctx = canvas.getContext('2d');
 const overlayForm = document.getElementById('form-overlay');
 const container = document.getElementById('pdf-container');
-
-// Tamaño original del PDF en puntos (letter)
 const pdfOriginal = { width: 612, height: 792 };
 
-// Coordenadas en puntos PDF: AJUSTA ESTOS VALORES a tu plantilla
 const campos = {
     obra: { x: 178, y: 640 },
-    ubicacion: { x: 192, y: 616},
+    ubicacion: { x: 192, y: 616 },
     numero_de_articulos: { x: 230, y: 592 },
-    fecha_soli:  { x: 480, y: 640 },
-    fecha_util:  { x: 480, y: 616 },
-    fecha_surt:  { x: 480, y: 592 },
+    fecha_soli: { x: 480, y: 640 },
+    fecha_util: { x: 480, y: 616 },
+    fecha_surt: { x: 480, y: 592 },
     contratista_soli: { x: 170, y: 562 },
-    contratista_auto: {x: 113, y: 533 },
-    area_util : {x: 163, y: 505}
-
-
+    contratista_auto: { x: 113, y: 533 },
+    area_util: { x: 163, y: 505 },
+    fecha_hora_creacion: { x: 450, y: 562 },
+    observaciones: { x: 450, y: 400 },
+    // Campos para items (14 filas, posiciones temporales para ajuste)
+    item1_descripcion: { x: 100, y: 450 },
+    item1_unidad: { x: 200, y: 450 },
+    item1_cantidad: { x: 250, y: 450 },
+    item2_descripcion: { x: 113, y: 430 },
+    item2_unidad: { x: 200, y: 430 },
+    item2_cantidad: { x: 250, y: 430 },
+    item3_descripcion: { x: 113, y: 410 },
+    item3_unidad: { x: 200, y: 410 },
+    item3_cantidad: { x: 250, y: 410 },
+    item4_descripcion: { x: 113, y: 390 },
+    item4_unidad: { x: 200, y: 390 },
+    item4_cantidad: { x: 250, y: 390 },
+    item5_descripcion: { x: 113, y: 370 },
+    item5_unidad: { x: 200, y: 370 },
+    item5_cantidad: { x: 250, y: 370 },
+    item6_descripcion: { x: 113, y: 350 },
+    item6_unidad: { x: 200, y: 350 },
+    item6_cantidad: { x: 250, y: 350 },
+    item7_descripcion: { x: 113, y: 330 },
+    item7_unidad: { x: 200, y: 330 },
+    item7_cantidad: { x: 250, y: 330 },
+    item8_descripcion: { x: 113, y: 310 },
+    item8_unidad: { x: 200, y: 310 },
+    item8_cantidad: { x: 250, y: 310 },
+    item9_descripcion: { x: 113, y: 290 },
+    item9_unidad: { x: 200, y: 290 },
+    item9_cantidad: { x: 250, y: 290 },
+    item10_descripcion: { x: 113, y: 270 },
+    item10_unidad: { x: 200, y: 270 },
+    item10_cantidad: { x: 250, y: 270 },
+    item11_descripcion: { x: 113, y: 250 },
+    item11_unidad: { x: 200, y: 250 },
+    item11_cantidad: { x: 250, y: 250 },
+    item12_descripcion: { x: 113, y: 230 },
+    item12_unidad: { x: 200, y: 230 },
+    item12_cantidad: { x: 250, y: 230 },
+    item13_descripcion: { x: 113, y: 210 },
+    item13_unidad: { x: 200, y: 210 },
+    item13_cantidad: { x: 250, y: 210 },
+    item14_descripcion: { x: 113, y: 190 },
+    item14_unidad: { x: 200, y: 190 },
+    item14_cantidad: { x: 250, y: 190 }
 };
 
-// Fixed field sizes    
 const fieldScales = {
     obra: { widthScale: 1.0, heightScale: 0.7, fontScale: 1.0 },
     ubicacion: { widthScale: 0.94, heightScale: 0.7, fontScale: 1.0 },
@@ -128,19 +137,21 @@ const fieldScales = {
     contratista_soli: { widthScale: 1.32, heightScale: 0.7, fontScale: 1.0 },
     contratista_auto: { widthScale: 1.58, heightScale: 0.7, fontScale: 1.0 },
     area_util: { widthScale: 1.35, heightScale: 0.7, fontScale: 1.0 },
+    fecha_hora_creacion: { widthScale: 1.2, heightScale: 0.7, fontScale: 0.9 },
+    observaciones: { widthScale: 8.0, heightScale: 2.0, fontScale: 1.0 },
+    item_descripcion: { widthScale: 1.5, heightScale: 0.7, fontScale: 1.0 },
+    item_unidad: { widthScale: 0.5, heightScale: 0.7, fontScale: 1.0 },
+    item_cantidad: { widthScale: 0.5, heightScale: 0.7, fontScale: 1.0 }
 };
 
-// Flag de debug: dibuja cajas rojas donde se posicionan los campos
 const DEBUG_DRAW_BOXES = false;
 
 function renderPDF(url) {
-    // Clear canvas before rendering
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     pdfjsLib.getDocument(url).promise.then(pdf => {
         pdf.getPage(1).then(page => {
             const viewportUnscaled = page.getViewport({ scale: 1 });
-            // Calcular scale para que quepa en ancho y alto del viewport (90% para margen)
             const scaleWidth = (window.innerWidth * 0.9) / viewportUnscaled.width;
             const scaleHeight = (window.innerHeight * 0.9) / viewportUnscaled.height;
             const scale = Math.min(scaleWidth, scaleHeight);
@@ -155,7 +166,6 @@ function renderPDF(url) {
             page.render(renderContext).promise.then(() => {
                 syncOverlayToCanvas();
                 positionFields();
-                // Reposicionar en resize (con debounce)
                 let resizeTimer;
                 window.addEventListener('resize', () => {
                     clearTimeout(resizeTimer);
@@ -163,61 +173,43 @@ function renderPDF(url) {
                         renderPDF(url);
                     }, 120);
                 });
-
             });
         });
-    }).catch(err => {
-        console.error("Error cargando PDF:", err);
-    });
+    }).catch(err => console.error("Error cargando PDF:", err));
 }
 
 function syncOverlayToCanvas() {
-    // Obtener rect del canvas relativo al contenedor
     const canvasRect = canvas.getBoundingClientRect();
     const containerRect = container.getBoundingClientRect();
-
-    // Posicionar overlay exactamente encima del canvas (en coordenadas del contenedor)
-    const left = canvasRect.left - containerRect.left;
-    const top  = canvasRect.top  - containerRect.top;
-
     overlayForm.style.position = 'absolute';
-    overlayForm.style.left = `${left}px`;
-    overlayForm.style.top  = `${top}px`;
+    overlayForm.style.left = `${canvasRect.left - containerRect.left}px`;
+    overlayForm.style.top  = `${canvasRect.top - containerRect.top}px`;
     overlayForm.style.width = `${canvasRect.width}px`;
     overlayForm.style.height = `${canvasRect.height}px`;
-    overlayForm.style.pointerEvents = 'auto'; // permitir interacción
+    overlayForm.style.pointerEvents = 'auto';
     overlayForm.style.overflow = 'visible';
 }
 
 function positionFields() {
-    // Obtener tamaño actual del canvas dentro del overlay
     const overlayRect = overlayForm.getBoundingClientRect();
     const canvasRect = canvas.getBoundingClientRect();
     const w = canvasRect.width;
     const h = canvasRect.height;
 
-    // Para cada campo, calcular su posición en pixeles relativa al overlay
     for (const key in campos) {
         const elem = document.getElementById(`campo-${key}`);
         if (!elem) continue;
         const pdfPos = campos[key];
-
-        // Escala: convertir puntos PDF -> pixels del canvas
         const x_px = (pdfPos.x / pdfOriginal.width) * w;
         const y_px = (pdfPos.y / pdfOriginal.height) * h;
-
-        // Invertir Y: pdf y=0 abajo => screen y = canvasHeight - y_px
         const top_px = h - y_px;
 
-        // Ajustar para que el input quede centrado verticalmente respecto a su altura
-        // Puedes cambiar width_base o setear estilo width en CSS si quieres fijo
         const { widthScale, heightScale, fontScale } = fieldScales[key] || { widthScale: 1.0, heightScale: 0.7, fontScale: 1.0 };
-        const width_px = 220 * (w / pdfOriginal.width) * widthScale; // ancho base escalado con scale
+        const width_px = 220 * (w / pdfOriginal.width) * widthScale;
         const height_px = 26 * (h / pdfOriginal.height) * heightScale;
 
         elem.style.position = 'absolute';
         elem.style.left = `${x_px}px`;
-        // Restar height_px para que el texto no salga fuera; ajustar si es necesario
         elem.style.top  = `${top_px - height_px}px`;
         elem.style.width = `${width_px}px`;
         elem.style.height = `${height_px}px`;
@@ -229,7 +221,6 @@ function positionFields() {
 }
 
 function drawDebugBoxes() {
-    // Dibuja rectángulos en el canvas para ayudarte a calibrar (se borra al re-render)
     ctx.save();
     ctx.strokeStyle = 'red';
     ctx.lineWidth = 1;
@@ -247,9 +238,6 @@ function drawDebugBoxes() {
     ctx.restore();
 }
 
-// Inicializar
 renderPDF(url);
-
-
 </script>
 {% endblock %}
