@@ -41,6 +41,8 @@ def requisiciones(request):
         area_util = request.POST.get('area_util', '')
         observaciones = request.POST.get('observaciones', '')
 
+
+
         try:
             # --- Buscar o crear la requisición ---
             requisicion, creada = Requisicion.objects.get_or_create(
